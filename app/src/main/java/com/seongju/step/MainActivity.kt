@@ -29,8 +29,9 @@ import com.seongju.step.ui.theme.StepTheme
 @OptIn(ExperimentalPermissionsApi::class)
 class MainActivity : ComponentActivity(), SensorEventListener {
 
-    var sensorManager: SensorManager? = null
-    var running = false
+    private lateinit var sensorManager: SensorManager
+    private lateinit var stepsSensor: Sensor
+    var running = 0
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -41,15 +42,13 @@ class MainActivity : ComponentActivity(), SensorEventListener {
              * Permission
              */
             val lifecycleOwner = LocalLifecycleOwner.current
-            val permissionsState =  rememberMultiplePermissionsState(
+            val permissionsState = rememberMultiplePermissionsState(
                 permissions = listOf(
                     Manifest.permission.ACTIVITY_RECOGNITION,
                     Manifest.permission.BLUETOOTH_SCAN,
                     Manifest.permission.BLUETOOTH_CONNECT,
                     Manifest.permission.BLUETOOTH_ADMIN,
                     Manifest.permission.BLUETOOTH,
-                    Manifest.permission.ACCESS_COARSE_LOCATION,
-                    Manifest.permission.ACCESS_FINE_LOCATION,
                 )
             )
             DisposableEffect(
@@ -70,7 +69,16 @@ class MainActivity : ComponentActivity(), SensorEventListener {
             /**
              *
              */
+
             sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
+            stepsSensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR)
+
+            if (stepsSensor == null) {
+                Toast.makeText(this, "No Step Counter Sensor !", Toast.LENGTH_SHORT).show()
+            } else {
+                sensorManager.registerListener(this, stepsSensor, SensorManager.SENSOR_DELAY_FASTEST)
+                Log.d("센서: ", stepsSensor.toString())
+            }
 
 
             StepTheme {
@@ -85,27 +93,16 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         }
     }
 
-    override fun onResume() {
-        super.onResume()
-        running = true
-        var stepsSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR)
-
-        if (stepsSensor == null) {
-            Toast.makeText(this, "No Step Counter Sensor !", Toast.LENGTH_SHORT).show()
-            Log.d("센서 여부: ", stepsSensor.toString())
-        } else {
-            sensorManager?.registerListener(this, stepsSensor, SensorManager.SENSOR_DELAY_NORMAL)
-        }
-    }
-
     override fun onSensorChanged(event: SensorEvent?) {
-        if (running) {
-            Log.d("이벤트 발생: ", event!!.values[0].toString())
-        }
+        Log.d("변경 이벤트 발생: ", event.toString())
+        running ++
+        Log.d("구분선", "---------------------------------------------------------------------------")
+        Log.d("걸음 수: ", running.toString())
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
-        TODO("Not yet implemented")
+        Log.d("센서 이벤트 발생: ", sensor.toString())
+        Log.d("가속도 이벤트 발생: ", accuracy.toString())
     }
 
 }
